@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-BOT_TOKEN      = os.environ.get("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+BOT_TOKEN      = os.environ.get("BOT_TOKEN", "8535568864:AAFWDifPgQate3OtTH6xasZcrklWvemzsDk")
 WEBHOOK_URL    = os.environ.get("WEBHOOK_URL", "")        # e.g. https://techwithcisco-bot.onrender.com
 ADMIN_USERNAME = "Othniel"
 MOMO_NUMBER    = "0243 812 365"
