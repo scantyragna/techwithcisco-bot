@@ -145,9 +145,8 @@ async def notify_admin(context, user_id, name, day, tx_id, username):
         f"⏰ Time: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
     )
     try:
-        admin = await context.bot.get_chat(f"@{ADMIN_USERNAME}")
         await context.bot.send_message(
-            chat_id=admin.id, text=msg,
+            chat_id=8625461305, text=msg,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
