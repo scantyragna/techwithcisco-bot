@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ── Config ────────────────────────────────────────────────────────────────────
 BOT_TOKEN      = os.environ.get("BOT_TOKEN", "8535568864:AAFWDifPgQate3OtTH6xasZcrklWvemzsDk")
 WEBHOOK_URL    = os.environ.get("WEBHOOK_URL", "https://techwithcisco-bot.onrender.com")
-ADMIN_USERNAME = "Othniel"
+ADMIN_USERNAME = "Cisco_0o"
 MOMO_NUMBER    = "0243 812 365"
 COURSE_PRICE   = 200
 DATA_FILE      = "students.json"
