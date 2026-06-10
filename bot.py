@@ -1,32 +1,29 @@
 import os
 import json
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime
 
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse
-from starlette.routing import Route
-
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, ContextTypes, ConversationHandler, filters
 )
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BOT_TOKEN      = os.environ.get("BOT_TOKEN", "8535568864:AAFWDifPgQate3OtTH6xasZcrklWvemzsDk")
-WEBHOOK_URL    = os.environ.get("WEBHOOK_URL", "")   # e.g. https://techwithcisco-bot.onrender.com
+WEBHOOK_URL    = os.environ.get("WEBHOOK_URL", "https://techwithcisco-bot.onrender.com")
 ADMIN_USERNAME = "Othniel"
 MOMO_NUMBER    = "0243 812 365"
 COURSE_PRICE   = 200
 DATA_FILE      = "students.json"
+PORT           = int(os.environ.get("PORT", 10000))
+
 DAY_LINKS = {
     "Sunday":    "https://t.me/c/3950943192/2",
     "Monday":    "https://t.me/c/3950943192/4",
@@ -38,7 +35,6 @@ DAY_LINKS = {
 }
 ANNOUNCEMENTS_LINK  = "https://t.me/c/3950943192/1"
 COMMUNITY_JOIN_LINK = "https://t.me/+BypZjsERlWw2NGU8"
-PORT = int(os.environ.get("PORT", 8080))
 
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 ASK_NAME, ASK_DAY, ASK_TXID = range(3)
@@ -60,7 +56,7 @@ def add_student(user_id, name, day, tx_id):
         "name": name, "day": day, "tx_id": tx_id,
         "amount": COURSE_PRICE, "status": "pending",
         "enrolled_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "telegram_id": user_id,
+        "telegram_id": user_id
     }
     save_students(data)
 
@@ -84,7 +80,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "💬 Private Telegram community for your day\n\n"
         f"💰 *Course fee: GHS {COURSE_PRICE} (one-time)*\n\n"
         "Let's get started! What is your *full name*?",
-        parse_mode="Markdown",
+        parse_mode="Markdown"
     )
     return ASK_NAME
 
@@ -99,7 +95,7 @@ async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Nice to meet you, *{name}*! 🎉\n\n"
         "Which day works best for your *live sessions*? 👇",
         parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
     return ASK_DAY
 
@@ -114,7 +110,7 @@ async def ask_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📱 *{MOMO_NUMBER}*\n"
         f"_(TechWithCisco — PC Basics Academy)_\n\n"
         "Once sent, reply here with your *MoMo transaction ID*.",
-        parse_mode="Markdown",
+        parse_mode="Markdown"
     )
     return ASK_TXID
 
@@ -128,7 +124,7 @@ async def ask_txid(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Thank you, *{name}*! 🙏\n\n"
         f"Transaction ID *{tx_id}* received.\n\n"
         "⏳ Verifying your payment — you'll get your community link within a few minutes!",
-        parse_mode="Markdown",
+        parse_mode="Markdown"
     )
     await notify_admin(context, user.id, name, day, tx_id, user.username or "No username")
     return ConversationHandler.END
@@ -136,7 +132,7 @@ async def ask_txid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def notify_admin(context, user_id, name, day, tx_id, username):
     keyboard = [[
         InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}"),
-        InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user_id}"),
+        InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user_id}")
     ]]
     msg = (
         f"🔔 *New Enrollment Request!*\n\n"
@@ -153,7 +149,7 @@ async def notify_admin(context, user_id, name, day, tx_id, username):
         await context.bot.send_message(
             chat_id=admin.id, text=msg,
             parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
     except Exception as e:
         logger.error(f"Could not notify admin: {e}")
@@ -185,11 +181,11 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"{ANNOUNCEMENTS_LINK}\n\n"
                 f"Welcome aboard! See you in class 📚💻"
             ),
-            parse_mode="Markdown",
+            parse_mode="Markdown"
         )
         await query.edit_message_text(
             query.message.text + f"\n\n✅ *Approved* — link sent to {name}.",
-            parse_mode="Markdown",
+            parse_mode="Markdown"
         )
     else:
         update_status(user_id, "rejected")
@@ -198,11 +194,11 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=(
                 f"Hi {name}, we couldn't verify your transaction ID.\n\n"
                 "Please check and send the correct MoMo transaction ID, or contact us for help."
-            ),
+            )
         )
         await query.edit_message_text(
             query.message.text + f"\n\n❌ *Rejected* — {name} has been notified.",
-            parse_mode="Markdown",
+            parse_mode="Markdown"
         )
 
 # ── Admin commands ────────────────────────────────────────────────────────────
@@ -216,7 +212,7 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = [
         f"📊 *Enrollment Report — {datetime.now().strftime('%d %b %Y')}*\n",
         f"👥 Total: *{len(data)}* | ✅ Approved: *{len(approved)}* | ⏳ Pending: *{len(pending)}*",
-        f"💰 Revenue: *GHS {revenue}*\n─────────────────────",
+        f"💰 Revenue: *GHS {revenue}*\n─────────────────────"
     ]
     for s in data.values():
         icon = "✅" if s["status"] == "approved" else ("⏳" if s["status"] == "pending" else "❌")
@@ -234,9 +230,7 @@ async def list_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if args:
         day_filter = args[0].capitalize()
         filtered = {k: v for k, v in data.items() if v["day"] == day_filter}
-        lines = [f"📅 *{day_filter} students:*\n"] + [
-            f"• {s['name']} — {s['status']}" for s in filtered.values()
-        ]
+        lines = [f"📅 *{day_filter} students:*\n"] + [f"• {s['name']} — {s['status']}" for s in filtered.values()]
     else:
         lines = ["👥 *All students:*\n"]
         for s in data.values():
@@ -256,12 +250,12 @@ async def pending_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uid, s in plist:
         keyboard = [[
             InlineKeyboardButton("✅ Approve", callback_data=f"approve_{uid}"),
-            InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{uid}"),
+            InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{uid}")
         ]]
         await update.message.reply_text(
             f"👤 *{s['name']}* — {s['day']}\nTX: `{s['tx_id']}`",
             parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
 async def revenue_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -277,71 +271,55 @@ async def revenue_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⏳ Pending students: *{len(pending)}*\n"
         f"💵 Total collected: *GHS {total}*\n"
         f"📈 Potential if all pending approved: *GHS {total + len(pending) * COURSE_PRICE}*",
-        parse_mode="Markdown",
+        parse_mode="Markdown"
     )
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Enrollment cancelled. Type /start to begin again anytime.")
     return ConversationHandler.END
 
-# ── Build PTB Application ─────────────────────────────────────────────────────
-def build_application() -> Application:
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .updater(None)   # webhook mode — no polling updater needed
-        .build()
-    )
+# ── Build Telegram application ────────────────────────────────────────────────
+ptb_app = Application.builder().token(BOT_TOKEN).updater(None).build()
 
-    conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name)],
-            ASK_DAY:  [CallbackQueryHandler(ask_day, pattern="^day_")],
-            ASK_TXID: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_txid)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=False,
-    )
+conv = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name)],
+        ASK_DAY:  [CallbackQueryHandler(ask_day, pattern="^day_")],
+        ASK_TXID: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_txid)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+)
+ptb_app.add_handler(conv)
+ptb_app.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve|reject)_"))
+ptb_app.add_handler(CommandHandler("report",  report))
+ptb_app.add_handler(CommandHandler("list",    list_cmd))
+ptb_app.add_handler(CommandHandler("pending", pending_cmd))
+ptb_app.add_handler(CommandHandler("revenue", revenue_cmd))
 
-    app.add_handler(conv)
-    app.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve|reject)_"))
-    app.add_handler(CommandHandler("report",  report))
-    app.add_handler(CommandHandler("list",    list_cmd))
-    app.add_handler(CommandHandler("pending", pending_cmd))
-    app.add_handler(CommandHandler("revenue", revenue_cmd))
-    return app
+# ── FastAPI app ───────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await ptb_app.initialize()
+    await ptb_app.bot.set_webhook(f"{WEBHOOK_URL}/webhook")
+    logger.info(f"Webhook set to {WEBHOOK_URL}/webhook")
+    yield
+    await ptb_app.shutdown()
 
-# ── Starlette ASGI app ────────────────────────────────────────────────────────
-ptb_app = build_application()
+api = FastAPI(lifespan=lifespan)
 
-async def health(request: Request) -> PlainTextResponse:
+@api.get("/")
+async def index():
     return PlainTextResponse("TechWithCisco Bot is running! ✅")
 
-async def webhook_handler(request: Request) -> PlainTextResponse:
-    data   = await request.json()
+@api.post("/webhook")
+async def webhook(req: Request):
+    data = await req.json()
     update = Update.de_json(data, ptb_app.bot)
     await ptb_app.process_update(update)
     return PlainTextResponse("ok")
 
-async def on_startup():
-    await ptb_app.initialize()
-    await ptb_app.bot.set_webhook(f"{WEBHOOK_URL}/webhook")
-    logger.info(f"Webhook set to {WEBHOOK_URL}/webhook")
-
-async def on_shutdown():
-    await ptb_app.shutdown()
-
-starlette_app = Starlette(
-    routes=[
-        Route("/",        health),
-        Route("/webhook", webhook_handler, methods=["POST"]),
-    ],
-    on_startup=[on_startup],
-    on_shutdown=[on_shutdown],
-)
-
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(starlette_app, host="0.0.0.0", port=PORT)
+    uvicorn.run(api, host="0.0.0.0", port=PORT)
