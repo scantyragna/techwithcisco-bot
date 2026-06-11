@@ -135,19 +135,18 @@ async def notify_admin(context, user_id, name, day, tx_id, username):
         InlineKeyboardButton("❌ Reject",  callback_data=f"reject_{user_id}")
     ]]
     msg = (
-        f"🔔 *New Enrollment Request!*\n\n"
-        f"👤 Name: *{name}*\n"
-        f"📅 Day: *{day}*\n"
+        f"🔔 New Enrollment Request!\n\n"
+        f"👤 Name: {name}\n"
+        f"📅 Day: {day}\n"
         f"💰 Amount: GHS {COURSE_PRICE}\n"
-        f"🧾 Transaction ID: `{tx_id}`\n"
+        f"🧾 Transaction ID: {tx_id}\n"
         f"📱 Telegram: @{username}\n"
-        f"🆔 User ID: `{user_id}`\n"
+        f"🆔 User ID: {user_id}\n"
         f"⏰ Time: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
     )
     try:
         await context.bot.send_message(
             chat_id=8625461305, text=msg,
-            parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
     except Exception as e:
